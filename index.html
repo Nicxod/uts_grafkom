@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball vs Ball: Random Arena — 2D Fighting Game</title>
+    <meta name="description" content="2D Arcade Fighting Game pertarungan bola lokal 2 pemain dengan sistem random ball dan skill unik. 100% Vanilla JS dan HTML5 Canvas.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="game-wrapper">
+        <!-- Background Ambient Grid & Particles -->
+        <div class="ambient-bg" aria-hidden="true">
+            <div class="ambient-glow glow-p1"></div>
+            <div class="ambient-glow glow-p2"></div>
+            <div class="ambient-grid"></div>
+        </div>
+
+        <!-- Header Bar -->
+        <header class="top-nav">
+            <div class="nav-brand">
+                <span class="brand-badge">2D ARCADE</span>
+                <span class="brand-title">BALL VS BALL</span>
+            </div>
+            <div class="nav-actions">
+                <button id="btnSoundToggle" class="btn-icon" title="Toggle Suara (Mute/Unmute)" aria-label="Toggle Suara">
+                    <span id="soundIcon" class="icon-audio">🔊</span>
+                    <span id="soundLabel">SUARA ON</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- SCREEN 1: MAIN MENU -->
+        <section id="screenMenu" class="screen active" aria-labelledby="menuTitle">
+            <div class="menu-content">
+                <div class="hero-badge">VERSUS BATTLE ARENA</div>
+                <h1 id="menuTitle" class="hero-title">
+                    <span class="title-ball-p1">BALL</span>
+                    <span class="title-vs">VS</span>
+                    <span class="title-ball-p2">BALL</span>
+                </h1>
+                <p class="hero-subtitle">RANDOM ARENA EDITION</p>
+
+                <div class="quick-controls-card">
+                    <div class="qc-player qc-p1">
+                        <div class="qc-badge">PEMAIN 1</div>
+                        <div class="qc-row"><span>Gerak:</span> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>
+                        <div class="qc-row"><span>Skill:</span> <kbd class="key-highlight">F</kbd></div>
+                    </div>
+                    <div class="qc-divider">VS</div>
+                    <div class="qc-player qc-p2">
+                        <div class="qc-badge">PEMAIN 2</div>
+                        <div class="qc-row"><span>Gerak:</span> <kbd>&uarr;</kbd><kbd>&larr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></div>
+                        <div class="qc-row"><span>Skill:</span> <kbd class="key-highlight">ENTER</kbd></div>
+                    </div>
+                </div>
+
+                <div class="menu-buttons">
+                    <button id="btnMenuPlay" class="btn btn-primary btn-large">
+                        <span class="btn-shine"></span>
+                        <span class="btn-text">MULAI PERMAINAN</span>
+                    </button>
+                    <button id="btnMenuHowTo" class="btn btn-secondary">
+                        <span class="btn-text">CARA BERMAIN & SKILL</span>
+                    </button>
+                </div>
+
+                <div class="menu-footer">
+                    <span>100% Offline &middot; HTML5 Canvas 2D &middot; Local 2-Player</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: RANDOM BALL SELECTION -->
+        <section id="screenSelection" class="screen" aria-labelledby="draftTitle">
+            <div class="selection-container">
+                <div class="selection-header">
+                    <h2 id="draftTitle" class="section-title">PENGACAKAN TIM BOLA</h2>
+                    <p class="section-subtitle">Setiap pemain mendapatkan 3 bola unik secara acak untuk bertarung di arena!</p>
+                </div>
+
+                <div class="draft-arena">
+                    <!-- PLAYER 1 TEAM -->
+                    <div class="team-panel team-p1">
+                        <div class="team-header">
+                            <span class="team-badge">PEMAIN 1 (WASD + F)</span>
+                            <h3 class="team-name">TIM BIRU</h3>
+                        </div>
+                        <div class="ball-cards-grid" id="p1BallCards">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- VS EMBLEM -->
+                    <div class="draft-vs-badge">
+                        <div class="vs-circle">VS</div>
+                        <div class="vs-pulse"></div>
+                    </div>
+
+                    <!-- PLAYER 2 TEAM -->
+                    <div class="team-panel team-p2">
+                        <div class="team-header">
+                            <span class="team-badge">PEMAIN 2 (PANAH + ENTER)</span>
+                            <h3 class="team-name">TIM MERAH</h3>
+                        </div>
+                        <div class="ball-cards-grid" id="p2BallCards">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SELECTION ACTIONS -->
+                <div class="selection-footer">
+                    <button id="btnReroll" class="btn btn-outline" title="Acak kembali bola untuk kedua pemain">
+                        <span class="btn-icon-symbol">🎲</span>
+                        <span class="btn-text">ACAK ULANG (RE-ROLL)</span>
+                    </button>
+                    <button id="btnStartBattle" class="btn btn-primary btn-pulse">
+                        <span class="btn-shine"></span>
+                        <span class="btn-text">MASUK KE ARENA (START BATTLE)</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: BATTLE ARENA -->
+        <section id="screenBattle" class="screen" aria-labelledby="arenaTitle">
+            <h2 id="arenaTitle" class="sr-only">Arena Pertarungan Ball vs Ball</h2>
+
+            <!-- BATTLE HUD -->
+            <div class="battle-hud">
+                <!-- PLAYER 1 HUD -->
+                <div class="hud-player hud-p1">
+                    <div class="hud-top-meta">
+                        <div class="hud-player-identity">
+                            <span class="hud-tag">P1</span>
+                            <span id="hudP1BallName" class="hud-ball-name">Fire Ball</span>
+                        </div>
+                        <!-- 3 Lives Indicator -->
+                        <div class="hud-lives-container" id="hudP1Lives">
+                            <span class="life-slot active" title="Bola 1"></span>
+                            <span class="life-slot active" title="Bola 2"></span>
+                            <span class="life-slot active" title="Bola 3"></span>
+                        </div>
+                    </div>
+
+                    <!-- HP Bar -->
+                    <div class="hud-hp-wrap">
+                        <div class="hud-hp-bar">
+                            <div id="hudP1HpFill" class="hud-hp-fill" style="width: 100%;"></div>
+                            <div id="hudP1HpGhost" class="hud-hp-ghost" style="width: 100%;"></div>
+                        </div>
+                        <div class="hud-hp-numbers">
+                            <span class="hp-label">HP</span>
+                            <span id="hudP1HpText" class="hp-val">100 / 100</span>
+                        </div>
+                    </div>
+
+                    <!-- Skill Indicator -->
+                    <div class="hud-skill-wrap">
+                        <div class="skill-box" id="hudP1SkillBox">
+                            <div class="skill-icon" id="hudP1SkillIcon">🔥</div>
+                            <div class="skill-cd-overlay" id="hudP1SkillCd"></div>
+                            <div class="skill-key-badge">F</div>
+                        </div>
+                        <div class="skill-info">
+                            <div class="skill-name" id="hudP1SkillName">Fire Blast</div>
+                            <div class="skill-status" id="hudP1SkillStatus">SIAP</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BATTLE CENTER CLOCK / VS -->
+                <div class="hud-center">
+                    <div class="hud-timer" id="hudMatchTimer">00:00</div>
+                    <div class="hud-vs-small">VS</div>
+                    <div class="hud-round-label" id="hudRoundLabel">ROUND 1</div>
+                </div>
+
+                <!-- PLAYER 2 HUD -->
+                <div class="hud-player hud-p2">
+                    <div class="hud-top-meta">
+                        <!-- 3 Lives Indicator -->
+                        <div class="hud-lives-container" id="hudP2Lives">
+                            <span class="life-slot active" title="Bola 1"></span>
+                            <span class="life-slot active" title="Bola 2"></span>
+                            <span class="life-slot active" title="Bola 3"></span>
+                        </div>
+                        <div class="hud-player-identity">
+                            <span id="hudP2BallName" class="hud-ball-name">Ice Ball</span>
+                            <span class="hud-tag">P2</span>
+                        </div>
+                    </div>
+
+                    <!-- HP Bar -->
+                    <div class="hud-hp-wrap">
+                        <div class="hud-hp-bar">
+                            <div id="hudP2HpFill" class="hud-hp-fill" style="width: 100%;"></div>
+                            <div id="hudP2HpGhost" class="hud-hp-ghost" style="width: 100%;"></div>
+                        </div>
+                        <div class="hud-hp-numbers">
+                            <span class="hp-label">HP</span>
+                            <span id="hudP2HpText" class="hp-val">100 / 100</span>
+                        </div>
+                    </div>
+
+                    <!-- Skill Indicator -->
+                    <div class="hud-skill-wrap right-aligned">
+                        <div class="skill-info">
+                            <div class="skill-name" id="hudP2SkillName">Ice Freeze</div>
+                            <div class="skill-status" id="hudP2SkillStatus">SIAP</div>
+                        </div>
+                        <div class="skill-box" id="hudP2SkillBox">
+                            <div class="skill-icon" id="hudP2SkillIcon">❄️</div>
+                            <div class="skill-cd-overlay" id="hudP2SkillCd"></div>
+                            <div class="skill-key-badge">ENTER</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CANVAS ARENA CONTAINER -->
+            <div class="canvas-viewport" id="canvasViewport">
+                <canvas id="battleCanvas" width="960" height="540"></canvas>
+                
+                <!-- BATTLE OVERLAY ANNOUNCEMENT -->
+                <div id="battleOverlay" class="battle-announcement hidden" aria-live="polite">
+                    <div class="announcement-content">
+                        <h3 id="announcementText" class="announcement-title">ROUND 1</h3>
+                        <p id="announcementSub" class="announcement-sub">READY... FIGHT!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BATTLE BOTTOM CONTROLS HINT -->
+            <div class="battle-footer-bar">
+                <div class="key-hint">
+                    <span class="hint-p1">P1:</span> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> + <kbd>F</kbd>
+                </div>
+                <div class="arena-status-msg" id="arenaStatusMsg">Gunakan skill & kalahkan seluruh 3 bola lawan!</div>
+                <div class="key-hint">
+                    <span class="hint-p2">P2:</span> <kbd>&uarr;</kbd><kbd>&larr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> + <kbd>ENTER</kbd>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: RESULT SCREEN -->
+        <section id="screenResult" class="screen" aria-labelledby="resultTitle">
+            <div class="result-card">
+                <div class="result-badge" id="resultTrophyBadge">🏆 JUARA ARENA</div>
+                <h2 id="resultTitle" class="result-title">PEMAIN 1 MENANG!</h2>
+                <p id="resultSubtitle" class="result-subtitle">Seluruh 3 bola lawan telah berhasil ditumbangkan!</p>
+
+                <!-- MATCH STATS BREAKDOWN -->
+                <div class="match-stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-label">Durasi Pertandingan</span>
+                        <span id="statDuration" class="stat-val">01:45</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Bola Kalah (P1 / P2)</span>
+                        <span id="statDefeatedBalls" class="stat-val">1 / 3</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Total Damage P1</span>
+                        <span id="statP1Damage" class="stat-val">285</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Total Damage P2</span>
+                        <span id="statP2Damage" class="stat-val">160</span>
+                    </div>
+                </div>
+
+                <div class="result-actions">
+                    <button id="btnRematch" class="btn btn-primary btn-large">
+                        <span class="btn-shine"></span>
+                        <span class="btn-text">REMATCH (ACAK TIM BARU)</span>
+                    </button>
+                    <button id="btnReturnMenu" class="btn btn-secondary">
+                        <span class="btn-text">MENU UTAMA</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL: HOW TO PLAY & SKILL GUIDE -->
+        <div id="modalHowTo" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <h3 id="modalTitle" class="modal-title">PANDUAN BERMAIN & DAFTAR SKILL</h3>
+                    <button id="btnCloseModal" class="btn-close" aria-label="Tutup panduan">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="guide-section">
+                        <h4>Aturan Pertandingan</h4>
+                        <ul>
+                            <li>Setiap pemain mendapatkan <strong>3 bola acak</strong> dengan skill dan karakteristik unik.</li>
+                            <li>Setiap bola memiliki <strong>HP awal 100</strong>. HP tidak dapat turun di bawah 0 atau naik di atas 100.</li>
+                            <li>Ketika HP sebuah bola mencapai 0, bola tersebut <strong>kalah</strong> dan nyawa pemain berkurang 1.</li>
+                            <li>Bola berikutnya dari daftar tim akan <strong>masuk otomatis ke arena</strong> dengan 100 HP.</li>
+                            <li>Pemain yang kehilangan seluruh 3 bola dinyatakan <strong>kalah</strong>.</li>
+                        </ul>
+                    </div>
+
+                    <div class="guide-section">
+                        <h4>Daftar 8 Jenis Bola & Skill</h4>
+                        <div class="table-responsive">
+                            <table class="skills-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bola</th>
+                                        <th>Skill</th>
+                                        <th>Damage / Efek</th>
+                                        <th>Cooldown</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="ball-chip chip-fire">🔥 Fire Ball</span></td>
+                                        <td><strong>Fire Blast</strong></td>
+                                        <td>Menembakkan proyektil api berdaya ledak (25 DMG)</td>
+                                        <td>4 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-ice">❄️ Ice Ball</span></td>
+                                        <td><strong>Ice Freeze</strong></td>
+                                        <td>Menembakkan pecahan es, memperlambat lawan 55% selama 2 detik (10 DMG)</td>
+                                        <td>6 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-thunder">⚡ Thunder Ball</span></td>
+                                        <td><strong>Lightning Strike</strong></td>
+                                        <td>Sambaran petir cepat seketika ke posisi lawan (20 DMG)</td>
+                                        <td>3 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-shield">🛡️ Shield Ball</span></td>
+                                        <td><strong>Energy Shield</strong></td>
+                                        <td>Mengaktifkan perisai yang mengurangi semua damage masuk sebesar 50% selama 2 detik</td>
+                                        <td>6 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-poison">☠️ Poison Ball</span></td>
+                                        <td><strong>Toxic Burst</strong></td>
+                                        <td>Menembakkan racun beracun yang memberikan damage berkala (total 20 DMG / 4 tick)</td>
+                                        <td>5 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-dash">💨 Dash Ball</span></td>
+                                        <td><strong>Power Dash</strong></td>
+                                        <td>Menerjang kencang ke depan; memberikan 15 DMG jika menabrak lawan</td>
+                                        <td>3 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-heal">💚 Heal Ball</span></td>
+                                        <td><strong>Healing Pulse</strong></td>
+                                        <td>Memancarkan denyut penyembuhan, memulihkan 15 HP sendiri (maks 100)</td>
+                                        <td>7 detik</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="ball-chip chip-shadow">🌑 Shadow Ball</span></td>
+                                        <td><strong>Shadow Strike</strong></td>
+                                        <td>Tebasan bayangan cepat berjarak pendek menembus lawan (18 DMG)</td>
+                                        <td>4 detik</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="guide-section">
+                        <h4>Tips Taktis</h4>
+                        <p>Tabrakan biasa antar bola tidak mengurangi HP namun memberikan dorongan pantulan (recoil). Gunakan momentum ini untuk menjaga jarak aman atau memojokkan lawan sebelum melancarkan skill!</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnModalUnderstood" class="btn btn-primary">MENGERTI & SIAP TANDING</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GAME LOGIC (100% Vanilla JS) -->
+    <script src="game.js"></script>
+</body>
+</html>
